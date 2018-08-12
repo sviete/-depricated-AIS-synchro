@@ -19,4 +19,4 @@ Features
 
 Credits/Libraries
 -----------------
-- baased on rcloneExplorer code [repo](https://github.com/kaczmarkiewiczp/rcloneExplorer) 
+- based on rcloneExplorer code [repo](https://github.com/kaczmarkiewiczp/rcloneExplorer) 
