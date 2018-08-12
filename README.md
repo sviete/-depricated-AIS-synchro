@@ -1,5 +1,4 @@
-# RcloneExplorer
-[![Packagist](https://img.shields.io/packagist/l/doctrine/orm.svg)](https://github.com/kaczmarkiewiczp/rcloneExplorer/blob/master/LICENSE) [![Github Releases](https://img.shields.io/github/downloads/kaczmarkiewiczp/rcloneExplorer/total.svg)](https://github.com/kaczmarkiewiczp/rcloneExplorer/edit/master/releases) [![GitHub release](https://img.shields.io/github/release/kaczmarkiewiczp/rcloneExplorer.svg)](https://github.com/kaczmarkiewiczp/rcloneExplorer/releases/latest)
+# AisRclone
 
 rclone explorer for Android
 
@@ -18,11 +17,6 @@ Features
 - Supports ARM and x86 devices
 - Supports SDK 21+ (Lollipop 5.0)
 
-TODO
-------------
-- [X] Creating new remotes
-  - [ ] Creating Team Drive remotes
-- [X] Deleting existing remotes
 
 Screenshots
 -----------
