@@ -1,3 +1,6 @@
+### 1.6.1
+* **New:** Save rclone.conf on SD card
+
 ### 1.6.0
 * **New:** Allow setting which remotes are in app shortcuts (from settings)
 * **New:** Pin remotes on supported launchers (Android 8.0)

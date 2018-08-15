@@ -119,6 +119,7 @@ public class DriveConfig extends Fragment {
         remoteNameInputLayout = view.findViewById(R.id.remote_name_layout);
         remoteNameInputLayout.setVisibility(View.VISIBLE);
         remoteName = view.findViewById(R.id.remote_name);
+        remoteName.setText("Dysk-Google");
 
         View clientIdTemplate = View.inflate(context, R.layout.config_form_template_edit_text, null);
         clientIdTemplate.setPadding(0, 0, 0, padding);
@@ -127,6 +128,7 @@ public class DriveConfig extends Fragment {
         clientIdInputLayout.setHint(getString(R.string.drive_client_id_hint));
         clientId = clientIdTemplate.findViewById(R.id.edit_text);
         clientIdTemplate.findViewById(R.id.helper_text).setVisibility(View.VISIBLE);
+        clientId.setText("1007254341608-o6pu9t2v2g0mlr91h0q3ltkt24ijiscg.apps.googleusercontent.com");
 
         View clientSecretTemplate = View.inflate(context, R.layout.config_form_template_edit_text, null);
         clientSecretTemplate.setPadding(0, 0, 0, padding);
@@ -135,6 +137,7 @@ public class DriveConfig extends Fragment {
         clientSecretInputLayout.setHint(getString(R.string.drive_client_secret_hint));
         clientSecret = clientSecretInputLayout.findViewById(R.id.edit_text);
         clientSecretTemplate.findViewById(R.id.helper_text).setVisibility(View.VISIBLE);
+        clientSecret.setText("JMSMZoOi1kmfNH3F7f6z-rOv");
 
         View scopeTemplate = View.inflate(context, R.layout.config_form_template_text_field, null);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -144,6 +147,7 @@ public class DriveConfig extends Fragment {
 
         scope = view.findViewById(R.id.text_view);
         scope.setText(R.string.drive_scope__hint);
+        scope.setText("scope: \"" + "drive" + "\"");
         scopeTemplate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -240,7 +244,7 @@ public class DriveConfig extends Fragment {
                 break;
         }
 
-        scope.setText("scrope: \"" + scopeString + "\"");
+        scope.setText("scope: \"" + scopeString + "\"");
     }
 
     private void setUpRemote() {
@@ -248,6 +252,7 @@ public class DriveConfig extends Fragment {
         String clientIdString = clientId.getText().toString();
         String clientSecretString = clientSecret.getText().toString();
         String rootFolderIdString = rootFolderId.getText().toString();
+
 
         if (name.trim().isEmpty()) {
             remoteNameInputLayout.setErrorEnabled(true);

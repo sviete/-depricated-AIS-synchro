@@ -17,6 +17,7 @@ import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -69,6 +70,31 @@ public class MainActivity   extends AppCompatActivity
     private Fragment fragment;
     private Context context;
     private Boolean isDarkTheme;
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case WRITE_REQUEST_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    try{
+                        //create folder on sdcard
+                        File directory = new File(Environment.getExternalStorageDirectory()+File.separator+"rclone");
+                        directory.mkdirs();
+
+                    } catch (Exception e){
+                        e.printStackTrace();
+                        Toasty.error(context, getString(R.string.error_mkdir), Toast.LENGTH_SHORT, true).show();
+                    }
+                } else {
+                    Toasty.error(context, getString(R.string.error_no_access_to_sdcar), Toast.LENGTH_LONG, true).show();
+                }
+            }
+
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -173,7 +199,7 @@ public class MainActivity   extends AppCompatActivity
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         int customPrimaryColor = sharedPreferences.getInt(getString(R.string.pref_key_color_primary), -1);
         int customAccentColor = sharedPreferences.getInt(getString(R.string.pref_key_color_accent), -1);
-        isDarkTheme = sharedPreferences.getBoolean(getString(R.string.pref_key_dark_theme), false);
+        isDarkTheme = sharedPreferences.getBoolean(getString(R.string.pref_key_dark_theme), true);
         getTheme().applyStyle(CustomColorHelper.getPrimaryColorTheme(this, customPrimaryColor), true);
         getTheme().applyStyle(CustomColorHelper.getAccentColorTheme(this, customAccentColor), true);
         if (isDarkTheme) {

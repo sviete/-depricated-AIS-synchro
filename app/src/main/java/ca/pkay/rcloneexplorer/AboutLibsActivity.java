@@ -81,6 +81,19 @@ public class AboutLibsActivity extends AppCompatActivity implements AboutLibrari
         libraryLicences = new HashMap<>();
         libraryLicenceUrls = new HashMap<>();
 
+
+        String rcloneSupportLibraries = "rcloneExplorer by Patryk Kaczmarkiewicz";
+        libraryNames.add(rcloneSupportLibraries);
+        libraryUrls.put(rcloneSupportLibraries, "https://github.com/kaczmarkiewiczp/rcloneExplorer");
+        libraryLicences.put(rcloneSupportLibraries, "Licensed under MIT\n");
+        libraryLicenceUrls.put(rcloneSupportLibraries, "https://github.com/kaczmarkiewiczp/rcloneExplorer/blob/master/LICENSE");
+
+        String rclone = "Rclone";
+        libraryNames.add(rclone);
+        libraryUrls.put(rclone, "https://github.com/ncw/rclone");
+        libraryLicences.put(rclone, "Licensed under MIT");
+        libraryLicenceUrls.put(rclone, "https://github.com/ncw/rclone/blob/master/COPYING");
+
         String androidSupportLibraries = "Android Support Libraries";
         libraryNames.add(androidSupportLibraries);
         libraryUrls.put(androidSupportLibraries, "https://developer.android.com/topic/libraries/support-library/");
@@ -111,11 +124,6 @@ public class AboutLibsActivity extends AppCompatActivity implements AboutLibrari
         libraryLicences.put(materialDesignIcons, "Licensed under SIL Open Font 1.1");
         libraryLicenceUrls.put(materialDesignIcons, "http://scripts.sil.org/cms/scripts/page.php?item_id=OFL_web");
 
-        String rclone = "Rclone";
-        libraryNames.add(rclone);
-        libraryUrls.put(rclone, "https://github.com/ncw/rclone");
-        libraryLicences.put(rclone, "Licensed under MIT");
-        libraryLicenceUrls.put(rclone, "https://github.com/ncw/rclone/blob/master/COPYING");
 
         String recyclerViewAnimators = "Recyclerview Animators";
         libraryNames.add(recyclerViewAnimators);

@@ -269,13 +269,12 @@ public class RemotesConfigList extends Fragment {
             }
         });
 
-
+        listContent.addView(providerDrive);
         listContent.addView(providerAlias);
         listContent.addView(providerB2);
         listContent.addView(providerBox);
         listContent.addView(providerCache);
         listContent.addView(providerCrypt);
-        listContent.addView(providerDrive);
         listContent.addView(providerDropbox);
         listContent.addView(providerFTP);
         listContent.addView(providerHubic);

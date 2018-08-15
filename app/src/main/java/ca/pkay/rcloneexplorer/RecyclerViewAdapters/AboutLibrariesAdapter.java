@@ -98,7 +98,7 @@ public class AboutLibrariesAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         holder.smashIcons.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                listener.onLibraryClick("https://www.flaticon.com/authors/smashicons");
+                listener.onLibraryClick("https://github.com/sviete");
 
             }
         });
@@ -106,7 +106,7 @@ public class AboutLibrariesAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         holder.flatIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                listener.onLibraryClick("https://www.flaticon.com/");
+                listener.onLibraryClick("https://www.ai-speaker.com");
             }
         });
     }

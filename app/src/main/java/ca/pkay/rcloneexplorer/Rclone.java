@@ -44,7 +44,7 @@ public class Rclone {
     public Rclone(Context context) {
         this.context = context;
         this.rclone = context.getFilesDir().getPath() + "/rclone";
-        this.rcloneConf = context.getFilesDir().getPath() + "/rclone.conf";
+        this.rcloneConf = Environment.getExternalStorageDirectory().getAbsolutePath()  + "/rclone/rclone.conf";
         log2File = new Log2File(context);
     }
 
@@ -302,6 +302,18 @@ public class Rclone {
     }
 
     public Process configCreate(List<String> options) {
+        //
+        try{
+            //create folder on sdcard if not exists
+            File directory = new File(Environment.getExternalStorageDirectory()+File.separator+"rclone");
+            if (!directory.isDirectory()) {
+                directory.mkdirs();
+                Runtime.getRuntime().exec("chmod 0777 " + directory);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        //
         String[] command = createCommand("config", "create");
         String[] opt = options.toArray(new String[0]);
         String[] commandWithOptions = new String[command.length + options.size()];
@@ -748,8 +760,8 @@ public class Rclone {
             return false;
         }
 
-        String appsFileDir = context.getFilesDir().getPath();
-        File file = new File(appsFileDir, "rclone.conf");
+        String extFileDir = Environment.getExternalStorageDirectory().getAbsolutePath() +  "/rclone";
+        File file = new File(extFileDir, "rclone.conf");
 
         try {
             file.delete();
@@ -771,16 +783,16 @@ public class Rclone {
     }
 
     public boolean isConfigFileCreated() {
-        String appsFileDir = context.getFilesDir().getPath();
-        String configFile = appsFileDir + "/rclone.conf";
+        String extFileDir = Environment.getExternalStorageDirectory().getAbsolutePath() +  "/rclone";
+        String configFile = extFileDir + "/rclone.conf";
         File file = new File(configFile);
         return file.exists();
     }
 
     public void copyConfigFile(Uri uri) throws IOException {
-        String appsFileDir = context.getFilesDir().getPath();
+        String extFileDir = Environment.getExternalStorageDirectory().getAbsolutePath() +  "/rclone";
         InputStream inputStream = context.getContentResolver().openInputStream(uri);
-        File outFile = new File(appsFileDir, "rclone.conf");
+        File outFile = new File(extFileDir, "rclone.conf");
         FileOutputStream fileOutputStream = new FileOutputStream(outFile);
 
         byte[] buffer = new byte[4096];

@@ -62,7 +62,7 @@ public class CustomColorHelper {
         if (context.getResources().getColor(R.color.colorPrimary_BlueGrey) == color) {
             return R.style.CustomPrimaryBlueGrey;
         }
-        return R.style.CustomPrimaryGreen;
+        return R.style.CustomPrimaryOrange;
     }
 
     public static int getAccentColorTheme(Context context, int color) {

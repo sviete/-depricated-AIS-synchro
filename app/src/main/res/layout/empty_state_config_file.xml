@@ -10,15 +10,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center">
+
         <ImageView
             android:id="@+id/empty_state_ic"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_empty_box"
-            android:tint="?attr/iconTint"
-            android:layout_centerHorizontal="true"
+            android:layout_width="264dp"
+            android:layout_height="115dp"
             android:layout_alignParentTop="true"
-            android:contentDescription="@string/empty_state_icon" />
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="0dp"
+            android:contentDescription="@string/empty_state_icon"
+            android:src="@drawable/ic_empty_box"
+            android:tint="?attr/iconTint" />
 
         <TextView
             android:id="@+id/empty_state_title"
@@ -37,9 +39,10 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/empty_state_title"
             android:layout_centerHorizontal="true"
+            android:layout_marginTop="8dp"
             android:text="@string/no_config_found"
-            android:textColor="?attr/textColorPrimary"
-            android:layout_marginTop="8dp" />
+            android:textAlignment="center"
+            android:textColor="?attr/textColorPrimary" />
 
         <Button
             android:id="@+id/empty_state_btn"

@@ -153,9 +153,9 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void setDefaultStates() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean isDarkTheme = sharedPreferences.getBoolean(getString(R.string.pref_key_dark_theme), false);
+        boolean isDarkTheme = sharedPreferences.getBoolean(getString(R.string.pref_key_dark_theme), true);
         boolean useLogs = sharedPreferences.getBoolean(getString(R.string.pref_key_logs), false);
-        boolean appUpdates = sharedPreferences.getBoolean(getString(R.string.pref_key_app_updates), true);
+        boolean appUpdates = sharedPreferences.getBoolean(getString(R.string.pref_key_app_updates), false);
         boolean crashReports = sharedPreferences.getBoolean(getString(R.string.pref_key_crash_reports), true);
         boolean showThumbnails = sharedPreferences.getBoolean(getString(R.string.pref_key_show_thumbnails), false);
 
