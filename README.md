@@ -1,4 +1,4 @@
-# AisRclone
+# Ais Synchro
 
 rclone explorer for Android
 
