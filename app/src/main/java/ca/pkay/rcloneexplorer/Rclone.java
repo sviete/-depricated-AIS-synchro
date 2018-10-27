@@ -6,7 +6,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
-import android.support.v4.util.Pair;
 import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
@@ -34,8 +33,10 @@ import es.dmoral.toasty.Toasty;
 
 public class Rclone {
 
-    public static int SYNC_DIRECTION_LOCAL_TO_REMOTE = 1;
-    public static int SYNC_DIRECTION_REMOTE_TO_LOCAL = 2;
+    public static final int SYNC_DIRECTION_LOCAL_TO_REMOTE = 1;
+    public static final int SYNC_DIRECTION_REMOTE_TO_LOCAL = 2;
+    public static final int SERVE_PROTOCOL_HTTP = 1;
+    public static final int SERVE_PROTOCOL_WEBDAV = 2;
     private Context context;
     private String rclone;
     private String rcloneConf;
@@ -186,6 +187,7 @@ public class Rclone {
         JSONObject remotesJSON;
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         Set<String> pinnedRemotes = sharedPreferences.getStringSet(context.getString(R.string.shared_preferences_pinned_remotes), new HashSet<String>());
+        Set<String> favoriteRemotes = sharedPreferences.getStringSet(context.getString(R.string.shared_preferences_drawer_pinned_remotes), new HashSet<String>());
 
         try {
             process = Runtime.getRuntime().exec(command);
@@ -205,7 +207,6 @@ public class Rclone {
 
             remotesJSON = new JSONObject(output.toString());
         } catch (IOException | InterruptedException | JSONException e) {
-            Toasty.error(context, context.getString(R.string.error_getting_remotes), Toast.LENGTH_SHORT, true).show();
             e.printStackTrace();
             return new ArrayList<>();
         }
@@ -233,6 +234,10 @@ public class Rclone {
 
                 if (pinnedRemotes.contains(newRemote.getName())) {
                     newRemote.pin(true);
+                }
+
+                if (favoriteRemotes.contains(newRemote.getName())) {
+                    newRemote.setDrawerPinned(true);
                 }
 
                 remoteItemList.add(newRemote);
@@ -362,32 +367,47 @@ public class Rclone {
         }
     }
 
-    public Process serveHttp(RemoteItem remote, String servePath, int port) {
+    public Process serve(int protocol, int port, boolean allowRemoteAccess, String user, String password, RemoteItem remote, String servePath) {
         String remoteName = remote.getName();
         String localRemotePath = (remote.isRemoteType(RemoteItem.LOCAL)) ? Environment.getExternalStorageDirectory().getAbsolutePath() + "/" : "";
         String path = (servePath.compareTo("//" + remoteName) == 0) ? remoteName + ":" + localRemotePath : remoteName + ":" + localRemotePath + servePath;
-        String[] command = createCommandWithOptions("serve", "http", "--addr", ":" + String.valueOf(port), path);
+
+        String commandProtocol = protocol == SERVE_PROTOCOL_HTTP ? "http" : "webdav";
+        String address;
+        if (allowRemoteAccess) {
+            address = ":" + String.valueOf(port);
+        } else {
+            address = "127.0.0.1:" + String.valueOf(port);
+        }
+        String cachePath = context.getCacheDir().getAbsolutePath();
+        String[] environmentalVariables = {"TMPDIR=" + cachePath}; // this is a fix for #199
+
+        String[] command;
+
+        if (user == null && password != null) {
+            command = createCommandWithOptions("serve", commandProtocol, "--addr", address, path, "--pass", password);
+        } else if (user != null && password == null) {
+            command = createCommandWithOptions("serve", commandProtocol, "--addr", address, path, "--user", user);
+        } else if (user != null) {
+            command = createCommandWithOptions("serve", commandProtocol, "--addr", address, path, "--user", user, "--pass", password);
+        } else {
+            command = createCommandWithOptions("serve", commandProtocol, "--addr", address, path);
+        }
 
         try {
-            return Runtime.getRuntime().exec(command);
+            if (protocol == SERVE_PROTOCOL_WEBDAV) {
+                return Runtime.getRuntime().exec(command, environmentalVariables);
+            } else {
+                return Runtime.getRuntime().exec(command);
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public Process serveWebdav(RemoteItem remote, String servePath, int port) {
-        String remoteName = remote.getName();
-        String localRemotePath = (remote.isRemoteType(RemoteItem.LOCAL)) ? Environment.getExternalStorageDirectory().getAbsolutePath() + "/" : "";
-        String path = (servePath.compareTo("//" + remoteName) == 0) ? remoteName + ":" + localRemotePath : remoteName + ":" + localRemotePath + servePath;
-        String[] command = createCommandWithOptions("serve", "webdav", "--addr", ":" + String.valueOf(port), path);
-
-        try {
-            return Runtime.getRuntime().exec(command);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    public Process serve(int protocol, int port, boolean localhostOnly, RemoteItem remote, String servePath) {
+        return serve(protocol, port, localhostOnly, null, null, remote, servePath);
     }
 
     public Process sync(RemoteItem remoteItem, String remote, String localPath, int syncDirection) {

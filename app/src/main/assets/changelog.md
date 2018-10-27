@@ -1,3 +1,40 @@
+### 1.7.3
+* **Fix:** FAB appearing when bottom bar is visible
+* **New:** Get notified when beta releases are available
+    * Enable in Settings under Notifications (stable update notifications must be enabled)
+
+***
+
+### 1.7.2
+* **New:** Option to hide remotes
+* **Fix:** Upload bug in serve webdav
+* **Fix:** Missing transfer status missing from notification
+
+***
+
+### 1.7.1
+* **New:** Redesign settings layout
+* **Update:** Libraries
+* **Fix:** Some bugs with pinned navigation drawer remotes
+* **Fix:** Crash when sharing files with the app
+* **Fix:** Some other crashes
+
+***
+
+### 1.7.0
+* **New:** Show progress in upload, download, and sync notifications
+* **New:** Pin remotes to navigation drawer
+* **New:** Option to limit transfers to Wi-Fi only
+* **New:** Sync
+* **New:** Add sync webdev
+* **New:** When downloading, uploading, syncing, transfer only one file in parallel
+* **New:** Make crash reports and app update notifications optional
+* **New:** Update some icons
+* **Fix:** Proper encoding of URLs for streaming
+* **Fix:** Crashes
+
+***
+
 ### 1.6.1
 * **New:** Save rclone.conf on SD card
 
