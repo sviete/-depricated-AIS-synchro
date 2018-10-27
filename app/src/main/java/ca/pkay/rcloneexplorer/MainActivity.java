@@ -9,11 +9,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.pm.ShortcutInfo;
-import android.content.pm.ShortcutManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -30,12 +27,13 @@ import android.support.v7.app.AlertDialog;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
 import android.util.TypedValue;
+import android.view.Menu;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.widget.Toast;
 
@@ -44,6 +42,8 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import ca.pkay.rcloneexplorer.Dialogs.InputDialog;
@@ -51,12 +51,14 @@ import ca.pkay.rcloneexplorer.Dialogs.LoadingDialog;
 import ca.pkay.rcloneexplorer.Fragments.FileExplorerFragment;
 import ca.pkay.rcloneexplorer.Fragments.RemotesFragment;
 import ca.pkay.rcloneexplorer.Items.RemoteItem;
+import ca.pkay.rcloneexplorer.Settings.SettingsActivity;
 import es.dmoral.toasty.Toasty;
 import io.fabric.sdk.android.Fabric;
 
 public class MainActivity   extends AppCompatActivity
                             implements  NavigationView.OnNavigationItemSelectedListener,
                                         RemotesFragment.OnRemoteClickListener,
+                                        RemotesFragment.AddRemoteToNavDrawer,
                                         InputDialog.OnPositive {
 
     private static final int READ_REQUEST_CODE = 42; // code when opening rclone config file
@@ -70,6 +72,8 @@ public class MainActivity   extends AppCompatActivity
     private Fragment fragment;
     private Context context;
     private Boolean isDarkTheme;
+    private HashMap<Integer, RemoteItem> drawerPinnedRemoteIds;
+    private int availableDrawerPinnedRemoteId;
 
 
     @Override
@@ -106,16 +110,25 @@ public class MainActivity   extends AppCompatActivity
                 finish();
                 return;
             }
+
+            s = getIntent().getStringExtra(getString(R.string.firebase_msg_beta_app_updates_topic));
+            if (s != null) {
+                openBetaUpdate(s);
+                finish();
+                return;
+            }
         }
         
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean enableCrashReports = sharedPreferences.getBoolean(getString(R.string.pref_key_crash_reports), true);
+        boolean enableCrashReports = sharedPreferences.getBoolean(getString(R.string.pref_key_crash_reports), false);
         if (enableCrashReports) {
             Fabric.with(this, new Crashlytics());
         }
 
         applyTheme();
         context = this;
+        drawerPinnedRemoteIds = new HashMap<>();
+        availableDrawerPinnedRemoteId = 2;
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -140,7 +153,7 @@ public class MainActivity   extends AppCompatActivity
             }
         });
 
-        boolean appUpdates = sharedPreferences.getBoolean(getString(R.string.pref_key_app_updates), true);
+        boolean appUpdates = sharedPreferences.getBoolean(getString(R.string.pref_key_app_updates), false);
         if (appUpdates) {
             FirebaseMessaging.getInstance().subscribeToTopic(getString(R.string.firebase_msg_app_updates_topic));
         }
@@ -185,7 +198,7 @@ public class MainActivity   extends AppCompatActivity
             RemoteItem remoteItem = getRemoteItemFromName(remoteName);
             if (remoteItem != null) {
                 AppShortcutsHelper.reportAppShortcutUsage(this, remoteItem.getName());
-                restoreRemote(remoteItem);
+                startRemote(remoteItem, false);
             } else {
                 Toasty.error(this, getString(R.string.remote_not_found), Toast.LENGTH_SHORT, true).show();
                 finish();
@@ -193,6 +206,12 @@ public class MainActivity   extends AppCompatActivity
         } else {
             startRemotesFragment();
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        pinRemotesToDrawer();
     }
 
     private void applyTheme() {
@@ -280,8 +299,11 @@ public class MainActivity   extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else if (fragment != null && fragment instanceof FileExplorerFragment) {
-            if (((FileExplorerFragment) fragment).onBackButtonPressed())
+            if (((FileExplorerFragment) fragment).onBackButtonPressed()) {
                 return;
+            } else {
+                fragment = null;
+            }
         }
         super.onBackPressed();
     }
@@ -290,6 +312,11 @@ public class MainActivity   extends AppCompatActivity
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
+
+        if (drawerPinnedRemoteIds.containsKey(id)) {
+            startPinnedRemote(drawerPinnedRemoteIds.get(id));
+            return true;
+        }
 
         switch (id) {
             case R.id.nav_remotes:
@@ -322,6 +349,27 @@ public class MainActivity   extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private void pinRemotesToDrawer() {
+        Menu menu = navigationView.getMenu();
+        MenuItem existingMenu = menu.findItem(1);
+        if (existingMenu != null) {
+            return;
+        }
+
+        SubMenu subMenu = menu.addSubMenu(R.id.drawer_pinned_header, 1, Menu.NONE, R.string.nav_drawer_pinned_header);
+
+        List<RemoteItem> remoteItems = rclone.getRemotes();
+        Collections.sort(remoteItems);
+        for (RemoteItem remoteItem : remoteItems) {
+            if (remoteItem.isDrawerPinned()) {
+                MenuItem menuItem = subMenu.add(R.id.nav_pinned, availableDrawerPinnedRemoteId, Menu.NONE, remoteItem.getName());
+                drawerPinnedRemoteIds.put(availableDrawerPinnedRemoteId, remoteItem);
+                availableDrawerPinnedRemoteId++;
+                menuItem.setIcon(remoteItem.getRemoteIcon());
+            }
+        }
     }
 
     private void startRemotesFragment() {
@@ -420,29 +468,75 @@ public class MainActivity   extends AppCompatActivity
         startActivity(intent);
     }
 
-    @Override
-    public void onRemoteClick(RemoteItem remote) {
-        startRemote(remote);
+    private void openBetaUpdate(String url) {
+        Uri uri = Uri.parse(url);
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        startActivity(intent);
     }
 
-    private void startRemote(RemoteItem remote) {
+    @Override
+    public void onRemoteClick(RemoteItem remote) {
+        startRemote(remote, true);
+    }
+
+    private void startRemote(RemoteItem remote, boolean addToBackStack) {
         fragment = FileExplorerFragment.newInstance(remote);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.flFragment, fragment, FILE_EXPLORER_FRAGMENT_TAG);
-        transaction.addToBackStack(null);
+        if (addToBackStack) {
+            transaction.addToBackStack(null);
+        }
         transaction.commit();
 
         AppShortcutsHelper.reportAppShortcutUsage(this, remote.getName());
         navigationView.getMenu().getItem(0).setChecked(false);
     }
 
-    private void restoreRemote(RemoteItem remoteItem) {
-        fragment = FileExplorerFragment.newInstance(remoteItem);
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.flFragment, fragment, FILE_EXPLORER_FRAGMENT_TAG);
-        transaction.commit();
+    private void startPinnedRemote(RemoteItem remoteItem) {
+        if (fragment != null && fragment instanceof FileExplorerFragment) {
+            FragmentManager fragmentManager = getSupportFragmentManager();
 
-        navigationView.getMenu().getItem(0).setChecked(false);
+            // this is the case when remote gets started from a shortcut
+            // therefore back should exit the app, and not go into remotes screen
+            if (fragmentManager.getBackStackEntryCount() == 0) {
+                startRemote(remoteItem, false);
+            } else {
+                for (int i = 0; i < fragmentManager.getBackStackEntryCount(); i++) {
+                    fragmentManager.popBackStack();
+                }
+
+                startRemote(remoteItem, true);
+            }
+        } else {
+            startRemote(remoteItem, true);
+        }
+
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+    }
+
+    @Override
+    public void addRemoteToNavDrawer() {
+        Menu menu = navigationView.getMenu();
+
+        // remove all items and add them again so that it's in alpha order
+        menu.removeItem(1);
+        drawerPinnedRemoteIds.clear();
+        availableDrawerPinnedRemoteId = 1;
+
+        pinRemotesToDrawer();
+    }
+
+    @Override
+    public void removeRemoteFromNavDrawer() {
+        Menu menu = navigationView.getMenu();
+
+        // remove all items and add them again so that it's in alpha order
+        menu.removeItem(1);
+        drawerPinnedRemoteIds.clear();
+        availableDrawerPinnedRemoteId = 1;
+
+        pinRemotesToDrawer();
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -528,13 +622,17 @@ public class MainActivity   extends AppCompatActivity
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
             SharedPreferences.Editor editor = sharedPreferences.edit();
             editor.remove(getString(R.string.shared_preferences_pinned_remotes));
+            editor.remove(getString(R.string.shared_preferences_drawer_pinned_remotes));
+            editor.remove(getString(R.string.shared_preferences_hidden_remotes));
             editor.apply();
 
             if (rclone.isConfigEncrypted()) {
+                pinRemotesToDrawer(); // this will clear any previous pinned remotes
                 askForConfigPassword();
             } else {
                 AppShortcutsHelper.removeAllAppShortcuts(context);
                 AppShortcutsHelper.populateAppShortcuts(context, rclone.getRemotes());
+                pinRemotesToDrawer();
                 startRemotesFragment();
             }
         }

@@ -116,10 +116,16 @@ public class FilePicker extends AppCompatActivity implements    FilePickerAdapte
         if (!destinationPickerType) {
             speedDialView.setVisibility(View.INVISIBLE);
         }
-        speedDialView.setMainFabOnClickListener(new View.OnClickListener() {
+        speedDialView.setOnChangeListener(new SpeedDialView.OnChangeListener() {
             @Override
-            public void onClick(View v) {
+            public boolean onMainActionSelected() {
                 fabClicked();
+                return false;
+            }
+
+            @Override
+            public void onToggleChanged(boolean isOpen) {
+
             }
         });
     }
@@ -502,6 +508,10 @@ public class FilePicker extends AppCompatActivity implements    FilePickerAdapte
             File[] extFiles = getExternalMediaDirs();
             String internalStorage = storageDirectories.get(0);
             for (File f : extFiles) {
+                if (f == null) {
+                    continue;
+                }
+
                 if (!f.getAbsolutePath().startsWith(internalStorage)) {
                     storageDirectories.add(f.getAbsolutePath());
                 }

@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.FileProvider;
@@ -61,6 +62,7 @@ import ca.pkay.rcloneexplorer.Dialogs.GoToDialog;
 import ca.pkay.rcloneexplorer.Dialogs.InputDialog;
 import ca.pkay.rcloneexplorer.Dialogs.LinkDialog;
 import ca.pkay.rcloneexplorer.Dialogs.LoadingDialog;
+import ca.pkay.rcloneexplorer.Dialogs.ServeDialog;
 import ca.pkay.rcloneexplorer.Dialogs.SortDialog;
 import ca.pkay.rcloneexplorer.FileComparators;
 import ca.pkay.rcloneexplorer.Dialogs.FilePropertiesDialog;
@@ -89,7 +91,8 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
                                                                 OpenAsDialog.OnClickListener,
                                                                 InputDialog.OnPositive,
                                                                 GoToDialog.Callbacks,
-                                                                SortDialog.OnClickListener {
+                                                                SortDialog.OnClickListener,
+                                                                ServeDialog.Callback {
 
     private static final String ARG_REMOTE = "remote_param";
     private static final String SHARED_PREFS_SORT_ORDER = "ca.pkay.rcexplorer.sort_order";
@@ -256,22 +259,27 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
         }
 
         fab = view.findViewById(R.id.fab);
-        fab.setSpeedDialOverlayLayout((SpeedDialOverlayLayout)view.findViewById(R.id.fab_overlay));
-        fab.setMainFabOnClickListener(new View.OnClickListener() {
+        fab.setOverlayLayout((SpeedDialOverlayLayout)view.findViewById(R.id.fab_overlay));
+        fab.setOnActionSelectedListener(new SpeedDialView.OnActionSelectedListener() {
             @Override
-            public void onClick(View v) {
-                if (fab.isFabMenuOpen()) {
-                    fab.closeOptionsMenu();
+            public boolean onActionSelected(SpeedDialActionItem actionItem) {
+                switch (actionItem.getId()) {
+                    case R.id.fab_add_folder:
+                        onCreateNewDirectory();
+                        break;
+                    case R.id.fab_upload:
+                        onUploadFiles();
+                        break;
                 }
+                return false;
             }
         });
-        fab.addFabOptionItem(new SpeedDialActionItem.Builder(R.id.fab_upload, R.drawable.ic_file_upload)
+        fab.addActionItem(new SpeedDialActionItem.Builder(R.id.fab_upload, R.drawable.ic_file_upload)
                 .setLabel(getString(R.string.fab_upload_files))
                 .create());
-        fab.addFabOptionItem(new SpeedDialActionItem.Builder(R.id.fab_add_folder, R.drawable.ic_create_new_folder)
+        fab.addActionItem(new SpeedDialActionItem.Builder(R.id.fab_add_folder, R.drawable.ic_create_new_folder)
                 .setLabel(getString(R.string.fab_new_folder))
                 .create());
-        setFabClickListeners();
 
         breadcrumbView = ((FragmentActivity) context).findViewById(R.id.breadcrumb_view);
         breadcrumbView.setOnClickListener(this);
@@ -381,11 +389,24 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
             ((FragmentActivity) context).findViewById(R.id.move_bar).setVisibility(View.VISIBLE);
             fab.hide();
             fab.setVisibility(View.INVISIBLE);
+            setFabBehaviour(false);
         }
         downloadList = savedInstanceState.getParcelableArrayList(SAVED_DOWNLOAD_LIST);
         moveStartPath = savedInstanceState.getString(SAVED_MOVE_START_PATH);
         syncDirection = savedInstanceState.getInt(SAVED_SYNC_DIRECTION, -1);
         syncRemotePath = savedInstanceState.getString(SAVED_SYNC_REMOTE_PATH);
+    }
+
+    private void setFabBehaviour(boolean enableSnackBarBehaviour) {
+        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) fab.getLayoutParams();
+
+        if (enableSnackBarBehaviour) {
+            params.setBehavior(new SpeedDialView.ScrollingViewSnackbarBehavior());
+            fab.requestLayout();
+        } else {
+            params.setBehavior(new SpeedDialView.NoBehavior());
+            fab.requestLayout();
+        }
     }
 
     private void setTitle() {
@@ -574,34 +595,7 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
                 recyclerViewAdapter.toggleSelectAll();
                 return true;
             case R.id.action_serve:
-                String[] serveOptions = new String[] {"HTTP", "Webdav"};
-                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                builder.setItems(serveOptions, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent intent = new Intent(getContext(), StreamingService.class);
-                        switch (which) {
-                            case 0: // HTTP
-                                intent.putExtra(StreamingService.SERVE_PATH_ARG, directoryObject.getCurrentPath());
-                                intent.putExtra(StreamingService.REMOTE_ARG, remote);
-                                intent.putExtra(StreamingService.SERVE_PROTOCOL, StreamingService.SERVE_HTTP);
-                                intent.putExtra(StreamingService.SHOW_NOTIFICATION_TEXT, true);
-                                break;
-                            case 1: // Webdav
-                                intent.putExtra(StreamingService.SERVE_PATH_ARG, directoryObject.getCurrentPath());
-                                intent.putExtra(StreamingService.REMOTE_ARG, remote);
-                                intent.putExtra(StreamingService.SERVE_PROTOCOL, StreamingService.SERVE_WEBDAV);
-                                intent.putExtra(StreamingService.SHOW_NOTIFICATION_TEXT, true);
-                                break;
-                            default:
-                                return;
-                        }
-                        context.startService(intent);
-                    }
-                });
-                builder.setTitle(R.string.pick_a_protocol);
-                builder.show();
-
+                serve();
                 return true;
             case R.id.action_empty_trash:
                 emptyTrash();
@@ -629,6 +623,36 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
             default:
                     return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void serve() {
+        ServeDialog serveDialog = new ServeDialog();
+        serveDialog.setDarkTheme(isDarkTheme);
+        serveDialog.show(getChildFragmentManager(), "serve dialog");
+    }
+
+    // serve callback
+    @Override
+    public void onServeOptionsSelected(int protocol, boolean allowRemoteAccess, String user, String password) {
+        Intent intent = new Intent(getContext(), StreamingService.class);
+        intent.putExtra(StreamingService.SERVE_PATH_ARG, directoryObject.getCurrentPath());
+        intent.putExtra(StreamingService.REMOTE_ARG, remote);
+        intent.putExtra(StreamingService.SHOW_NOTIFICATION_TEXT, true);
+        intent.putExtra(StreamingService.ALLOW_REMOTE_ACCESS, allowRemoteAccess);
+        intent.putExtra(StreamingService.AUTHENTICATION_USERNAME, user);
+        intent.putExtra(StreamingService.AUTHENTICATION_PASSWORD, password);
+
+        switch (protocol) {
+            case Rclone.SERVE_PROTOCOL_HTTP: // HTTP
+                intent.putExtra(StreamingService.SERVE_PROTOCOL, StreamingService.SERVE_HTTP);
+                break;
+            case Rclone.SERVE_PROTOCOL_WEBDAV: // Webdav
+                intent.putExtra(StreamingService.SERVE_PROTOCOL, StreamingService.SERVE_WEBDAV);
+                break;
+            default:
+                return;
+        }
+        context.startService(intent);
     }
 
     private void emptyTrash() {
@@ -751,23 +775,6 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
         }
     }
 
-    private void setFabClickListeners() {
-        fab.setOptionFabSelectedListener(new SpeedDialView.OnOptionFabSelectedListener() {
-            @Override
-            public void onOptionFabSelected(SpeedDialActionItem speedDialActionItem) {
-                fab.closeOptionsMenu();
-                switch (speedDialActionItem.getId()) {
-                    case R.id.fab_add_folder:
-                        onCreateNewDirectory();
-                        break;
-                    case R.id.fab_upload:
-                        onUploadFiles();
-                        break;
-                }
-            }
-        });
-    }
-
     private void setBottomBarClickListeners(final View view) {
         view.findViewById(R.id.file_download).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -886,6 +893,7 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
         hideMoveBar();
         fab.show();
         fab.setVisibility(View.VISIBLE);
+        setFabBehaviour(true);
         showNavDrawerButtonInToolbar();
         setOptionsMenuVisibility(true);
         recyclerViewAdapter.refreshData();
@@ -917,6 +925,7 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
         hideMoveBar();
         fab.show();
         fab.setVisibility(View.VISIBLE);
+        setFabBehaviour(true);
         setOptionsMenuVisibility(true);
         recyclerViewAdapter.setMoveMode(false);
         recyclerViewAdapter.refreshData();
@@ -1075,6 +1084,7 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
     public void onAttach(Context context) {
         super.onAttach(context);
         this.context = context;
+        isRunning = true;
     }
 
     @Override
@@ -1112,8 +1122,8 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
         } else if (isSearchMode) {
             searchClicked();
             return true;
-        } else if (fab.isFabMenuOpen()) {
-            fab.closeOptionsMenu();
+        } else if (fab.isOpen()) {
+            fab.close(true);
             return true;
         } else if (pathStack.isEmpty()) {
             return false;
@@ -1217,6 +1227,7 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
             showBottomBar();
             fab.hide();
             fab.setVisibility(View.INVISIBLE);
+            setFabBehaviour(false);
             setOptionsMenuVisibility(false);
             showCancelButtonInToolbar();
             if (numOfSelected > 1) {
@@ -1236,6 +1247,7 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
             hideBottomBar();
             fab.show();
             fab.setVisibility(View.VISIBLE);
+            setFabBehaviour(true);
             setOptionsMenuVisibility(true);
             showNavDrawerButtonInToolbar();
         } else {
@@ -1333,8 +1345,8 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
 
     @Override
     public void onBreadCrumbClicked(String path) {
-        if (fab.isFabMenuOpen()) {
-            fab.closeOptionsMenu();
+        if (fab.isOpen()) {
+            fab.close(true);
         }
         if (isSearchMode) {
             searchClicked();
@@ -1499,6 +1511,7 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
         setOptionsMenuVisibility(false);
         fab.hide();
         fab.setVisibility(View.INVISIBLE);
+        setFabBehaviour(false);
     }
 
     private void onCreateNewDirectory() {
@@ -1833,17 +1846,19 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
                 rclone.logErrorOutput(process);
             }
 
-            return process.exitValue() == 0;
+            return process != null && process.exitValue() == 0;
         }
 
         @Override
         protected void onPostExecute(Boolean status) {
             super.onPostExecute(status);
-            if (loadingDialog != null) {
-                if (loadingDialog.isStateSaved()) {
-                    loadingDialog.dismissAllowingStateLoss();
-                } else {
+            if (loadingDialog.isStateSaved()) {
+                loadingDialog.dismissAllowingStateLoss();
+            } else {
+                try {
                     loadingDialog.dismiss();
+                } catch (NullPointerException e) {
+                    return;
                 }
             }
             if (!status) {
@@ -1980,10 +1995,12 @@ public class FileExplorerFragment extends Fragment implements   FileExplorerRecy
         @Override
         protected void onPostExecute(Boolean result) {
             super.onPostExecute(result);
-            if (result) {
-                Toasty.success(context, getString(R.string.trash_emptied), Toast.LENGTH_SHORT, true).show();
-            } else {
-                Toasty.error(context, getString(R.string.error_emptying_trash), Toast.LENGTH_SHORT, true).show();
+            if (isRunning) {
+                if (result) {
+                    Toasty.success(context, getString(R.string.trash_emptied), Toast.LENGTH_SHORT, true).show();
+                } else {
+                    Toasty.error(context, getString(R.string.error_emptying_trash), Toast.LENGTH_SHORT, true).show();
+                }
             }
         }
     }
