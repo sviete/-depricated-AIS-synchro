@@ -83,7 +83,7 @@
     <string name="error_deleting_file">Error deleting a file</string>
     <string name="error_mkdir">Error creating a directory</string>
     <string name="error_moving_file">Error moving a file</string>
-    <string name="error_no_access_to_sdcar">For correct operation of the application, access to the device's memory is required</string>
+    <string name="error_no_access_to_sdcar">"For correct operation of the application, access to the device's memory is required"</string>
     <string name="sort_by_name">By name</string>
     <string name="sort_by_date_modified">By date modified</string>
     <string name="sort_by_size">By size</string>
@@ -312,7 +312,7 @@
     <string name="unpin_from_drawer">Unpin from drawer</string>
     <string name="shared_preferences_pinned_remotes">shared_preferences_pinned_remotes</string>
     <string name="shared_preferences_drawer_pinned_remotes">shared_preferences_drawer_pinned_remotes</string>
-    <string name="app_latest_release_url">https://github.com/kaczmarkiewiczp/rcloneExplorer/releases/latest</string>
+    <string name="app_latest_release_url">https://github.com/sviete/AIS-synchro/releases/latest</string>
     <string name="experimental_features">Experimental Features</string>
     <string name="show_thumbnails">Show thumbnails</string>
     <string name="generate_password_title">Generate Password</string>
