@@ -17,7 +17,7 @@
     <string name="about">O programie</string>
     <string name="sort">Sortuj</string>
     <string name="select_all">Wybierz wszystko</string>
-    <string name="serve">Serve</string>
+    <string name="serve">Serwowanie</string>
     <string name="action_sort_name">Nazwa</string>
     <string name="action_sort_date">Data</string>
     <string name="action_sort_size">Rozmiar</string>
